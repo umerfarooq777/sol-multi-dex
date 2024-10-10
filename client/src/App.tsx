@@ -11,6 +11,11 @@ import { Token } from './components/types';
 
 // Import styles for wallet adapters
 import '@solana/wallet-adapter-react-ui/styles.css';
+import { Buffer } from 'buffer';
+import process from 'process';
+
+window.Buffer = Buffer;
+window.process = process;
 
 const App: React.FC = () => {
   const TOKENS: Token[] = [
