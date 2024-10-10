@@ -21,7 +21,9 @@ const App: React.FC = () => {
   const TOKENS: Token[] = [
     {
       tokenName: 'SOL',
-      address: 'So11111111111111111111111111111111111111112',
+      // address: 'So11111111111111111111111111111111111111112',
+      // address: 'SuperbZyz7TsSdSoFAZ6RYHfAWe9NmjXBLVQpS8hqdx',
+      address: 'UXPhBoR3qG4UCiGNJfV7MqhHyFqKN68g45GoYvAeL2M',
       decimals: 9,
     },
     {

@@ -1,7 +1,11 @@
 import React, { useState } from "react";
 import axios from "axios";
 import { useWallet } from "@solana/wallet-adapter-react"; // Import wallet hook
-import { createJupiterApiClient, QuoteGetRequest, QuoteResponse } from "@jup-ag/api";
+import {
+  createJupiterApiClient,
+  QuoteGetRequest,
+  QuoteResponse,
+} from "@jup-ag/api";
 import { Wallet } from "@project-serum/anchor";
 import {
   Connection,
@@ -23,26 +27,34 @@ const JupiterSwap: React.FC<SwapProps> = ({ fromToken, toToken }) => {
   const [quote, setQuote] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
 
-  const getJupiterQuote = async ():Promise<null|QuoteResponse> => {
+  const getJupiterQuote = async (): Promise<null | QuoteResponse> => {
     try {
       setLoading(true);
-      const data:QuoteResponse = await jupiterQuoteApi.quoteGet({
+      const data: QuoteResponse = await jupiterQuoteApi.quoteGet({
         inputMint: fromToken.address,
         outputMint: toToken.address,
-        amount: 1000000, // Example amount
+        amount: 1000000000, // Example amount
       });
-      console.log("🚀 ~ getJupiterQuote ~ data:", data)
+      const dataWithFees: QuoteResponse = await jupiterQuoteApi.quoteGet({
+        inputMint: fromToken.address,
+        outputMint: toToken.address,
+        amount: 1000000000, // Example amount
+        platformFeeBps: 100,
+        
+      });
+      console.log("🚀 ~ getJupiterQuote ~ data:", data);
+      console.log("🚀 ~ getJupiterQuote ~ dataWithFees:", dataWithFees);
 
       if (data) {
         setQuote(`Quote: ${data.outAmount} USDC`);
       } else {
         setQuote("No quote available.");
       }
-      return data
+      return data;
     } catch (error) {
       console.error("Error fetching Jupiter quote:", error);
       setQuote("Failed to fetch quote.");
-      return null
+      return null;
     } finally {
       setLoading(false);
     }
@@ -56,11 +68,9 @@ const JupiterSwap: React.FC<SwapProps> = ({ fromToken, toToken }) => {
 
     try {
       const quoteResponse = await getJupiterQuote(); // Get the quote before executing
-      if(!quoteResponse) return 
-
+      if (!quoteResponse) return;
 
       setLoading(true);
-
 
       const swapObj = await jupiterQuoteApi.swapPost({
         swapRequest: {
@@ -68,6 +78,7 @@ const JupiterSwap: React.FC<SwapProps> = ({ fromToken, toToken }) => {
           userPublicKey: publicKey.toBase58(),
           dynamicComputeUnitLimit: true,
           prioritizationFeeLamports: "auto",
+          // feeAccount:""
         },
       });
 
@@ -76,7 +87,8 @@ const JupiterSwap: React.FC<SwapProps> = ({ fromToken, toToken }) => {
         Buffer.from(swapObj.swapTransaction, "base64")
       );
 
-      if(!transaction || !signTransaction) throw new Error("Transaction Error: ")
+      if (!transaction || !signTransaction)
+        throw new Error("Transaction Error: ");
 
       const signedTransaction = await signTransaction(transaction);
 
