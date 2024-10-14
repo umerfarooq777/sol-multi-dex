@@ -5,6 +5,7 @@ import {
   createJupiterApiClient,
   QuoteGetRequest,
   QuoteResponse,
+  SwapResponse,
 } from "@jup-ag/api";
 import { Wallet } from "@project-serum/anchor";
 import {
@@ -12,6 +13,7 @@ import {
   VersionedTransaction,
   TransactionExpiredBlockheightExceededError,
   VersionedTransactionResponse,
+  VersionedMessage,
 } from "@solana/web3.js";
 import bs58 from "bs58";
 import { SwapProps } from "./types";
@@ -26,7 +28,6 @@ const JupiterSwap: React.FC<SwapProps> = ({ fromToken, toToken }) => {
   const { publicKey, sendTransaction, signTransaction } = useWallet(); // Get connected wallet
   const [quote, setQuote] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
-
   const getJupiterQuote = async (): Promise<null | QuoteResponse> => {
     try {
       setLoading(true);
@@ -101,6 +102,64 @@ const JupiterSwap: React.FC<SwapProps> = ({ fromToken, toToken }) => {
       setLoading(false);
     }
   };
+
+  // const executeJupiterSwapMagicLink = async () => {
+  //   const publicAddress = publicKey?.toBase58()
+  //   if (!publicAddress || !connection) {
+  //     alert("Please connect your wallet.");
+  //     return;
+  //   }
+  //   setLoading(true);
+    
+  //   const quoteResponse = await getJupiterQuote(); // Get the quote before executing
+  //   if (!quoteResponse) return;
+  
+  //   const hash = await connection?.getLatestBlockhash();
+  //   if (!hash) return;
+  
+  //   try {
+  //     const swapObj: SwapResponse = await jupiterQuoteApi.swapPost({
+  //       swapRequest: {
+  //         quoteResponse: quoteResponse,
+  //         userPublicKey: publicAddress,
+  //         dynamicComputeUnitLimit: true,
+  //         prioritizationFeeLamports: "auto",
+  //       },
+  //     });
+  //     console.log("🚀 ~ executeJupiterSwapMagicLink ~ swapObj:", swapObj);
+  
+  //     // Convert the base64-encoded transaction to Uint8Array
+  //     const encodedTx = swapObj.swapTransaction;
+  //     const decodedTx = Uint8Array.from(Buffer.from(encodedTx, "base64"));
+  
+  //     // Deserializing the versioned transaction using VersionedMessage
+  //     const message = VersionedMessage.deserialize(decodedTx);
+  //     const transaction = new VersionedTransaction(message);
+  
+  //     console.log("🚀 ~ executeJupiterSwapMagicLink ~ Versioned Transaction:", transaction);
+  
+  //     // Sign the transaction with Magic or your connected wallet
+  //     const signedTransaction = await magic?.solana.signTransaction(transaction, {
+  //       requireAllSignatures: false,
+  //       verifySignatures: true,
+  //     });
+  
+  //     // Send the signed transaction
+  //     const signature = await connection.sendRawTransaction(
+  //       signedTransaction.serialize()
+  //     );
+  
+  //     // Confirm transaction
+  //     await connection.confirmTransaction(signature, "processed");
+  
+  //     console.log("Transaction sent with signature:", signature);
+  
+  //   } catch (error) {
+  //     console.error("Error executing Jupiter swap:", error);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
   return (
     <div>
