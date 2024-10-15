@@ -1,113 +1,112 @@
 // PoolCard.tsx
 import React from 'react';
-import { PoolData } from "../types";
-import { useWallet } from "@solana/wallet-adapter-react"; // Import wallet hook
-import { createJupiterApiClient, QuoteResponse } from "@jup-ag/api";
+import { PoolData } from '../types';
+import { useWallet } from '@solana/wallet-adapter-react'; // Import wallet hook
+import { createJupiterApiClient, QuoteResponse } from '@jup-ag/api';
 import { VersionedTransaction } from '@solana/web3.js';
 import { connection } from '../constants';
 
 const jupiterQuoteApi = createJupiterApiClient();
 
 interface PoolCardProps {
-  pool: PoolData;
+    pool: PoolData;
 }
 
 const PoolCard: React.FC<PoolCardProps> = ({ pool }) => {
-  const { publicKey, sendTransaction, signTransaction } = useWallet(); // Get connected wallet
-  const [quote, setQuote] = React.useState<string | null>(null);
-  const [loading, setLoading] = React.useState<boolean>(false);
+    const { publicKey, sendTransaction, signTransaction } = useWallet(); // Get connected wallet
+    const [quote, setQuote] = React.useState<string | null>(null);
+    const [loading, setLoading] = React.useState<boolean>(false);
 
-  const getJupiterQuote = async (fromTokenAddress: string, toTokenAddress: string): Promise<QuoteResponse | null> => {
-    try {
-      setLoading(true);
-      const data: QuoteResponse = await jupiterQuoteApi.quoteGet({
-        inputMint: fromTokenAddress,
-        outputMint: toTokenAddress,
-        amount: 1000000000, // Example amount
-      });
-      
-      if (data) {
-        setQuote(`Quote: ${parseFloat(data.outAmount)} USDC`);
-      } else {
-        setQuote("No quote available.");
-      }
-      return data;
-    } catch (error) {
-      console.error("Error fetching Jupiter quote:", error);
-      setQuote("Failed to fetch quote.");
-      return null;
-    } finally {
-      setLoading(false);
-    }
-  };
+    const getJupiterQuote = async (fromTokenAddress: string, toTokenAddress: string): Promise<QuoteResponse | null> => {
+        try {
+            setLoading(true);
+            const data: QuoteResponse = await jupiterQuoteApi.quoteGet({
+                inputMint: fromTokenAddress,
+                outputMint: toTokenAddress,
+                amount: 1000000000, // Example amount
+            });
 
-  const executeJupiterSwap = async () => {
-    if (!publicKey) {
-      alert("Please connect your wallet.");
-      return;
-    }
+            if (data) {
+                setQuote(`Quote: ${parseFloat(data.outAmount)} USDC`);
+            } else {
+                setQuote('No quote available.');
+            }
+            return data;
+        } catch (error) {
+            console.error('Error fetching Jupiter quote:', error);
+            setQuote('Failed to fetch quote.');
+            return null;
+        } finally {
+            setLoading(false);
+        }
+    };
 
-    try {
-      const fromTokenAddress = pool.mintA.address; // Example from token
-      const toTokenAddress = pool.mintB.address; // Example to token
-      const quoteResponse = await getJupiterQuote(fromTokenAddress, toTokenAddress);
-      if (!quoteResponse) return;
+    const executeJupiterSwap = async () => {
+        if (!publicKey) {
+            alert('Please connect your wallet.');
+            return;
+        }
 
-      setLoading(true);
-      const swapObj = await jupiterQuoteApi.swapPost({
-        swapRequest: {
-          quoteResponse: quoteResponse,
-          userPublicKey: publicKey.toBase58(),
-          dynamicComputeUnitLimit: true,
-          prioritizationFeeLamports: "auto",
-        },
-      });
+        try {
+            const fromTokenAddress = pool.mintA.address; // Example from token
+            const toTokenAddress = pool.mintB.address; // Example to token
+            const quoteResponse = await getJupiterQuote(fromTokenAddress, toTokenAddress);
+            if (!quoteResponse) return;
 
-      // Deserialize the transaction and sign with the wallet
-      const transaction = VersionedTransaction.deserialize(
-        Buffer.from(swapObj.swapTransaction, "base64")
-      );
+            setLoading(true);
+            const swapObj = await jupiterQuoteApi.swapPost({
+                swapRequest: {
+                    quoteResponse: quoteResponse,
+                    userPublicKey: publicKey.toBase58(),
+                    dynamicComputeUnitLimit: true,
+                    prioritizationFeeLamports: 'auto',
+                },
+            });
 
-      if (!transaction || !signTransaction)
-        throw new Error("Transaction Error: ");
+            // Deserialize the transaction and sign with the wallet
+            const transaction = VersionedTransaction.deserialize(Buffer.from(swapObj.swapTransaction, 'base64'));
 
-      const signedTransaction = await signTransaction(transaction);
-      const signature = await sendTransaction(signedTransaction, connection);
-      console.log(`Transaction sent: https://solscan.io/tx/${signature}`);
-    } catch (error) {
-      console.error("Error executing Jupiter swap:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+            if (!transaction || !signTransaction) throw new Error('Transaction Error: ');
 
-  return (
-    <div className="pool-card">
-      <h3>{pool.mintA.symbol} / {pool.mintB.symbol}</h3>
-      <p>Price: {pool.price}</p>
-      <p>TVL: {pool.tvl}</p>
-      <button onClick={()=>getJupiterQuote(pool.mintA.address, pool.mintB.address)} disabled={loading}>
-        {loading ? "Loading..." : "Get Qoute"}
-      </button>
-      <button onClick={executeJupiterSwap} disabled={loading}>
-        {loading ? "Loading..." : "Swap"}
-      </button>
-      {quote && <p>{quote}</p>}
+            const signedTransaction = await signTransaction(transaction);
+            const signature = await sendTransaction(signedTransaction, connection);
+            console.log(`Transaction sent: https://solscan.io/tx/${signature}`);
+        } catch (error) {
+            console.error('Error executing Jupiter swap:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
-      <div>
+    return (
+        <div className="pool-card">
+            <h3>
+                {pool.mintA.symbol} / {pool.mintB.symbol}
+            </h3>
+            <p>Price: {pool.price}</p>
+            <p>TVL: {pool.tvl}</p>
+            <button onClick={() => getJupiterQuote(pool.mintA.address, pool.mintB.address)} disabled={loading}>
+                {loading ? 'Loading...' : 'Get Qoute'}
+            </button>
+            <button onClick={executeJupiterSwap} disabled={loading}>
+                {loading ? 'Loading...' : 'Swap'}
+            </button>
+            {quote && <p>{quote}</p>}
 
-      <iframe id="dextools-widget"
-    title="DEXTools Trading Chart"
-    width="1000"
-    height="400" src={`https://www.dextools.io/widget-chart/en/solana/pe-light/${pool.id}?theme=dark&chartType=1&chartResolution=30&drawingToolbars=false`}></iframe>
-      </div>
-    </div>
-  );
+            <div>
+                <iframe
+                    id={pool.id}
+                    title={`${pool.mintA.symbol} / ${pool.mintB.symbol}`}
+                    width="500"
+                    height="200"
+                    src={`https://www.dextools.io/widget-chart/en/solana/pe-light/${pool.id}?theme=dark&chartType=1&chartResolution=30&drawingToolbars=false`}
+                ></iframe>
+            </div>
+        </div>
+    );
 };
 
 export default PoolCard;
-
-
 
 //   const publicAddress = publicKey?.toBase58()
 //   if (!publicAddress || !connection) {
@@ -115,7 +114,7 @@ export default PoolCard;
 //     return;
 //   }
 //   setLoading(true);
-  
+
 //   const quoteResponse = await getJupiterQuote(); // Get the quote before executing
 //   if (!quoteResponse) return;
 
