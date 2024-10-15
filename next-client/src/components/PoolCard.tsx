@@ -1,6 +1,6 @@
 // PoolCard.tsx
 import React from 'react';
-import { PoolData } from '../types';
+import { Mint, PoolData } from '../types';
 import { useWallet } from '@solana/wallet-adapter-react'; // Import wallet hook
 import { createJupiterApiClient, QuoteResponse } from '@jup-ag/api';
 import { VersionedTransaction } from '@solana/web3.js';
@@ -17,17 +17,17 @@ const PoolCard: React.FC<PoolCardProps> = ({ pool }) => {
     const [quote, setQuote] = React.useState<string | null>(null);
     const [loading, setLoading] = React.useState<boolean>(false);
 
-    const getJupiterQuote = async (fromTokenAddress: string, toTokenAddress: string): Promise<QuoteResponse | null> => {
+    const getJupiterQuote = async (fromToken: Mint, toTokenAddress: string): Promise<QuoteResponse | null> => {
         try {
             setLoading(true);
             const data: QuoteResponse = await jupiterQuoteApi.quoteGet({
-                inputMint: fromTokenAddress,
+                inputMint: fromToken.address,
                 outputMint: toTokenAddress,
-                amount: 1000000000, // Example amount
+                amount: 1 * fromToken.decimals, // Example amount
             });
 
             if (data) {
-                setQuote(`Quote: ${parseFloat(data.outAmount)} USDC`);
+                setQuote(`Quote: ${parseFloat(data.outAmount)}`);
             } else {
                 setQuote('No quote available.');
             }
@@ -48,7 +48,7 @@ const PoolCard: React.FC<PoolCardProps> = ({ pool }) => {
         }
 
         try {
-            const fromTokenAddress = pool.mintA.address; // Example from token
+            const fromTokenAddress = pool.mintA; // Example from token
             const toTokenAddress = pool.mintB.address; // Example to token
             const quoteResponse = await getJupiterQuote(fromTokenAddress, toTokenAddress);
             if (!quoteResponse) return;
@@ -79,26 +79,28 @@ const PoolCard: React.FC<PoolCardProps> = ({ pool }) => {
     };
 
     return (
-        <div className="pool-card">
-            <h3>
+        <div className="pool-card" style={{display:"flex"}}>
+            
+            <div>            <h3>
                 {pool.mintA.symbol} / {pool.mintB.symbol}
             </h3>
             <p>Price: {pool.price}</p>
             <p>TVL: {pool.tvl}</p>
-            <button onClick={() => getJupiterQuote(pool.mintA.address, pool.mintB.address)} disabled={loading}>
-                {loading ? 'Loading...' : 'Get Qoute'}
+            <button onClick={() => getJupiterQuote(pool.mintA, pool.mintB.address)} disabled={loading}>
+                {loading ? 'Loading...' : `Get 1 ${pool.mintA.symbol} Qoute`}
             </button>
             <button onClick={executeJupiterSwap} disabled={loading}>
                 {loading ? 'Loading...' : 'Swap'}
             </button>
-            {quote && <p>{quote}</p>}
+            {quote && <p>{quote}</p>}</div>
+
 
             <div>
                 <iframe
                     id={pool.id}
                     title={`${pool.mintA.symbol} / ${pool.mintB.symbol}`}
-                    width="500"
-                    height="200"
+                    width="800"
+                    height="300"
                     src={`https://www.dextools.io/widget-chart/en/solana/pe-light/${pool.id}?theme=dark&chartType=1&chartResolution=30&drawingToolbars=false`}
                 ></iframe>
             </div>
